@@ -4,7 +4,7 @@ import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { Bar, Line } from 'react-chartjs-2';
 import 'chart.js/auto';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import './App.css'; // <-- Tu archivo CSS conectado
+import './App.css'; 
 
 import GraficoEnLinea from './GraficosEnLinea';
 import TarjetasIoT from './TarjetasIoT';
@@ -15,7 +15,7 @@ const App = () => {
   // Cargador inteligente de Google Maps
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: "AIzaSyCPiibj5tq0cloahKf1km4p9j361spYwx0" // <-- PEGA AQUÍ TU CLAVE DE GOOGLE
+    googleMapsApiKey: "AIzaSyCPiibj5tq0cloahKf1km4p9j361spYwx0"
   });
 
   const [locations, setLocations] = useState([]);
@@ -76,7 +76,7 @@ const App = () => {
   useEffect(() => {
     setLoading(true);
     axios.get(`/api-openaq/v3/locations?limit=${fetchLimit}`, {
-      headers: { 'X-API-Key': '8b9668b0efee71fb9fd9f6744aca66a048aa1f5557cd3773e647306e04584d3a' } // <-- PEGA AQUÍ TU CLAVE DE OPENAQ
+      headers: { 'X-API-Key': '8b9668b0efee71fb9fd9f6744aca66a048aa1f5557cd3773e647306e04584d3a' } 
     })
       .then(response => {
         if (response.data.results && response.data.results.length > 0) {
