@@ -107,114 +107,96 @@ const App = () => {
   };
 
   return (
-    <div className="container-fluid p-0" style={{ backgroundColor: '#f4f6f9', minHeight: '100vh' }}>
+    <div className="container-fluid p-0 dashboard-container">
       <nav className="navbar navbar-dark" style={{ backgroundColor: '#2c3e50' }}>
         <div className="container-fluid">
-          <span className="navbar-brand mb-0 h1">Plataforma de Gestión y Monitoreo Ambiental (OpenAQ V3)</span>
+          <span className="navbar-brand mb-0 h1 fs-5">Monitoreo Ambiental (OpenAQ V3)</span>
         </div>
       </nav>
 
       <div className="row g-0">
-        {/* ==================== MENÚ LATERAL INTERACTIVO ==================== */}
-        <div className="col-md-2 p-3 text-white" style={{ backgroundColor: '#34495e', minHeight: '90vh' }}>
-          <ul className="nav flex-column gap-2">
-            
+        {/* CORRECCIÓN DE MENÚ: Horizontal en móviles, Vertical en PC */}
+        <div className="col-md-2 p-3 text-white sidebar-menu" style={{ minHeight: 'auto' }}>
+          <ul className="nav flex-row flex-md-column gap-2 flex-nowrap overflow-x-auto pb-2 pb-md-0" style={{ WebkitOverflowScrolling: 'touch' }}>
             <li className="nav-item">
-              <span className={`nav-link ${activeView === 'dashboard' ? 'text-white fw-bold border-start border-3 border-info bg-dark bg-opacity-25' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('dashboard')}>
-                📊 Dashboard
-              </span>
+              <span className={`nav-link text-nowrap ${activeView === 'dashboard' ? 'text-white fw-bold border-bottom border-md-start border-3 border-info bg-dark bg-opacity-25' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('dashboard')}>📊 Dashboard</span>
             </li>
-            
             <li className="nav-item">
-              <span className={`nav-link ${activeView === 'grafico' ? 'text-white fw-bold border-start border-3 border-info bg-dark bg-opacity-25' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('grafico')}>
-                📈 Gráfico en línea
-              </span>
+              <span className={`nav-link text-nowrap ${activeView === 'grafico' ? 'text-white fw-bold border-bottom border-md-start border-3 border-info bg-dark bg-opacity-25' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('grafico')}>📈 Gráfico en línea</span>
             </li>
-            
             <li className="nav-item">
-              <span className={`nav-link ${activeView === 'tarjetas' ? 'text-white fw-bold border-start border-3 border-info bg-dark bg-opacity-25' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('tarjetas')}>
-                💳 Tarjetas IoT
-              </span>
+              <span className={`nav-link text-nowrap ${activeView === 'tarjetas' ? 'text-white fw-bold border-bottom border-md-start border-3 border-info bg-dark bg-opacity-25' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('tarjetas')}>💳 Tarjetas IoT</span>
             </li>
-            
             <li className="nav-item">
-              <span className={`nav-link ${activeView === 'tablas' ? 'text-white fw-bold border-start border-3 border-info bg-dark bg-opacity-25' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('tablas')}>
-                📋 Tablas de datos
-              </span>
+              <span className={`nav-link text-nowrap ${activeView === 'tablas' ? 'text-white fw-bold border-bottom border-md-start border-3 border-info bg-dark bg-opacity-25' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('tablas')}>📋 Tablas de datos</span>
             </li>
-            
-            <li className="nav-item mt-4 pt-4 border-top border-secondary">
-              <span className={`nav-link ${activeView === 'alertas' ? 'text-danger fw-bold border-start border-3 border-danger bg-dark bg-opacity-25' : 'text-danger opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('alertas')}>
-                ⚠️ Alertas Activas
-              </span>
+            <li className="nav-item border-md-top border-secondary mt-md-4 pt-md-4">
+              <span className={`nav-link text-nowrap ${activeView === 'alertas' ? 'text-danger fw-bold border-bottom border-md-start border-3 border-danger bg-dark bg-opacity-25' : 'text-danger opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('alertas')}>⚠️ Alertas Activas</span>
             </li>
-            
           </ul>
         </div>
 
-        {/* ==================== MOTOR DE RENDERIZADO ==================== */}
         {activeView === 'dashboard' && (
           <>
-            <div className="col-md-7 p-4">
-              <div className="row mb-4">
-                <div className="col-md-3">
+            <div className="col-md-7 p-3 p-md-4">
+              {/* CORRECCIÓN DE TARJETAS: g-3 añade espacio entre tarjetas apiladas en móviles */}
+              <div className="row mb-4 g-3">
+                <div className="col-12 col-md-3">
                   <div className="card shadow-sm p-3 border-0 bg-white h-100">
                     <h6 className="text-muted fw-bold mb-1 small">SENSORES EN PANTALLA</h6>
                     <h3 className="text-primary fw-bold mb-0">{loading ? "..." : filteredAndSortedLocations.length}</h3>
                   </div>
                 </div>
-                
-                <div className="col-md-4">
+                <div className="col-12 col-md-4">
                   <div className="card shadow-sm p-3 border-0 bg-white h-100">
                     <label className="text-muted fw-bold mb-2 small">CANTIDAD A DESCARGAR:</label>
                     <div className="input-group">
                       <input type="number" className="form-control border-secondary" value={inputLimit} onChange={(e) => setInputLimit(e.target.value)} min="1" max="2000"/>
-                      <button className="btn btn-primary" onClick={() => { if(inputLimit > 0) setFetchLimit(inputLimit); }} disabled={loading}>
-                        {loading ? "..." : "Cargar"}
-                      </button>
+                      <button className="btn btn-primary" onClick={() => { if(inputLimit > 0) setFetchLimit(inputLimit); }} disabled={loading}>Cargar</button>
                     </div>
                   </div>
                 </div>
-
-                <div className="col-md-5">
+                <div className="col-12 col-md-5">
                   <div className="card shadow-sm p-3 border-0 bg-white h-100">
                     <label className="text-muted fw-bold mb-2 small">FILTRAR RED POR PAÍS:</label>
                     <select className="form-select border-secondary" value={selectedCountry} onChange={(e) => setSelectedCountry(e.target.value)}>
-                      <option value="">🌍 Mostrar Todos los Países (Global)</option>
+                      <option value="">🌍 Todos los Países (Global)</option>
                       {uniqueCountries.map(country => ( <option key={country} value={country}>{country}</option> ))}
                     </select>
                   </div>
                 </div>
               </div>
 
-              <div className="card shadow-sm mb-4 p-2 border-0">
-                <LoadScript googleMapsApiKey="AIzaSyCPiibj5tq0cloahKf1km4p9j361spYwx0"> {/* <--- PEGA AQUÍ TU CLAVE DE GOOGLE MAPS */}
-                  <GoogleMap mapContainerStyle={mapContainerStyle} zoom={2} center={defaultCenter}>
+              <div className="card shadow-sm mb-4 p-2 border-0 map-container">
+                {isLoaded ? (
+                  <GoogleMap mapContainerStyle={{height: "100%", width: "100%", borderRadius: "8px"}} zoom={2} center={defaultCenter}>
                     {filteredAndSortedLocations.map(loc => (
                       <Marker key={loc.id} position={{ lat: loc.coordinates.latitude, lng: loc.coordinates.longitude }} onClick={() => setSelectedLocation(loc)} />
                     ))}
                   </GoogleMap>
-                </LoadScript>
+                ) : (
+                  <div className="p-5 text-center text-muted">Cargando plataforma de mapas...</div>
+                )}
               </div>
 
               <div className="card shadow-sm p-3 border-0">
                 <h5 className="fw-bold text-secondary mb-3">Directorio de Dispositivos</h5>
-                <div className="table-responsive" style={{ maxHeight: "300px" }}>
-                  <table className="table table-hover align-middle">
+                <div className="table-responsive scrollable-table">
+                  <table className="table table-hover align-middle text-nowrap">
                     <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 1 }}>
                       <tr>
                         <th>Estado</th>
                         <th>Ubicación</th>
-                        <th onClick={() => handleSort('country')} style={{ cursor: "pointer", userSelect: "none" }} className="text-primary">País</th>
-                        <th onClick={() => handleSort('update')} style={{ cursor: "pointer", userSelect: "none" }} className="text-primary">Última Conexión</th>
+                        <th onClick={() => handleSort('country')} className="text-primary cursor-pointer">País</th>
+                        <th onClick={() => handleSort('update')} className="text-primary cursor-pointer">Última Conexión</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredAndSortedLocations.map(loc => {
                         const status = getSensorStatus(loc.datetimeLast?.utc);
                         return (
-                          <tr key={loc.id} onClick={() => setSelectedLocation(loc)} style={{ cursor: "pointer" }}>
-                            <td title={status.text} className="fs-5">{status.icon}</td>
+                          <tr key={loc.id} onClick={() => setSelectedLocation(loc)} className="cursor-pointer">
+                            <td className="fs-5">{status.icon}</td>
                             <td className="fw-bold text-secondary">{loc.name}</td>
                             <td>{loc.country?.name || "Desconocido"}</td>
                             <td className={status.color}>{status.text}</td>
@@ -227,17 +209,16 @@ const App = () => {
               </div>
             </div>
 
-            <div className="col-md-3 p-4 bg-white border-start shadow-sm" style={{ maxHeight: "100vh", overflowY: "auto" }}>
+            <div className="col-md-3 p-4 bg-white border-start shadow-sm scrollable-panel">
               <h5 className="fw-bold mb-3 text-secondary">DETALLES DE LA UBICACIÓN</h5>
               <hr />
               {selectedLocation ? (
                 <div>
                   <p className="mb-2"><strong>UBICACIÓN:</strong><br/><span className="text-primary">{selectedLocation.name}, {selectedLocation.country?.name || ""}</span></p>
-                  <p className="mb-2"><strong>PROVEEDOR:</strong><br/>{selectedLocation.provider?.name || "Red Pública"}</p>
                   <p className="mb-3"><strong>ESTADO:</strong><br/>{getSensorStatus(selectedLocation.datetimeLast?.utc).icon} {getSensorStatus(selectedLocation.datetimeLast?.utc).text}</p>
                   <div className="p-3 bg-light rounded mb-3">
                     <p className="mb-2 fw-bold text-secondary">SENSORES:</p>
-                    <ul className="mb-0">
+                    <ul className="mb-0 ps-3">
                       {selectedLocation.sensors?.map((sensor, index) => (
                         <li key={index}>{sensor.parameter?.displayName} <span className="badge bg-secondary">{sensor.parameter?.units}</span></li>
                       ))}
@@ -257,15 +238,12 @@ const App = () => {
           </>
         )}
 
-        {/* Llamada a los componentes externos pasándoles la data completa de locations */}
         {activeView === 'grafico' && <GraficoEnLinea selectedLocation={selectedLocation} setActiveView={setActiveView} chartData={chartData} bigChartData={bigChartData} />}
         {activeView === 'tarjetas' && <TarjetasIoT locations={locations} getSensorStatus={getSensorStatus} />}
         {activeView === 'tablas' && <TablaDatos locations={locations} getSensorStatus={getSensorStatus} />}
         {activeView === 'alertas' && <AlertasActivas locations={locations} getSensorStatus={getSensorStatus} />}
-        
       </div>
     </div>
   );
 };
-
 export default App;
