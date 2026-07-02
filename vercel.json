@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api-openaq/(.*)",
+      "destination": "https://api.openaq.org/$1"
+    }
+  ]
+}
