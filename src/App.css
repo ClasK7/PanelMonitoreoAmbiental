@@ -1,0 +1,35 @@
+/* App.css */
+
+/* Fondo principal de la aplicación */
+.dashboard-container {
+  background-color: #f4f6f9;
+  min-height: 100vh;
+}
+
+/* Color y tamaño del menú lateral */
+.sidebar-menu {
+  background-color: #34495e;
+  min-height: 90vh;
+}
+
+/* Estilo para los paneles laterales y tablas que necesitan barra de desplazamiento */
+.scrollable-panel {
+  max-height: 100vh;
+  overflow-y: auto;
+}
+
+.scrollable-table {
+  max-height: 300px;
+}
+
+/* Contenedor del mapa de Google */
+.map-container {
+  height: 400px;
+  width: 100%;
+  border-radius: 8px;
+}
+
+/* Efecto de mano al pasar el mouse sobre la tabla o menú */
+.cursor-pointer {
+  cursor: pointer;
+}
