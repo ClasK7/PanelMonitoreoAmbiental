@@ -10,14 +10,19 @@ const TablaDatos = ({ locations, getSensorStatus }) => {
 
   return (
     <div className="col-md-10 p-3 p-md-5 bg-white" style={{ maxHeight: "100vh", overflowY: "auto" }}>
-      {/* CORRECCIÓN: Apilamiento del buscador en móviles */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
           <h2 className="fw-bold text-secondary mb-0">Registro de Telemetría</h2>
           <p className="text-muted mt-1 mb-0">Base de datos de los nodos IoT.</p>
         </div>
         <div className="w-100" style={{ maxWidth: '400px' }}>
-          <input type="text" className="form-control border-secondary shadow-sm" placeholder="🔍 Buscar nodo o país..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <input 
+            type="text" 
+            className="form-control border-secondary shadow-sm" 
+            placeholder="🔍 Buscar nodo o país..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
         </div>
       </div>
 
@@ -28,7 +33,6 @@ const TablaDatos = ({ locations, getSensorStatus }) => {
       ) : (
         <div className="card border-0 shadow-sm">
           <div className="table-responsive" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-            {/* CORRECCIÓN: text-nowrap evita que el texto se aplaste hacia abajo */}
             <table className="table table-striped table-hover align-middle mb-0 text-nowrap">
               <thead className="table-dark" style={{ position: "sticky", top: 0, zIndex: 1 }}>
                 <tr>
@@ -37,27 +41,48 @@ const TablaDatos = ({ locations, getSensorStatus }) => {
                   <th className="py-3">Estación / Ubicación</th>
                   <th className="py-3">País</th>
                   <th className="py-3 text-center">Coordenadas</th>
+                  <th className="py-3">Proveedor de Red</th>
+                  <th className="py-3">Parámetros (Hardware)</th>
                   <th className="py-3">Último Reporte (UTC)</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
-                {filteredLocations.map((loc) => {
-                  const status = getSensorStatus(loc.datetimeLast?.utc);
-                  return (
-                    <tr key={loc.id}>
-                      <td className="fs-5 text-center">{status.icon}</td>
-                      <td className="text-muted fw-bold">#{loc.id}</td>
-                      <td className="fw-bold text-dark">{loc.name}</td>
-                      <td>{loc.country?.name || "Desconocido"}</td>
-                      <td className="text-center font-monospace small">
-                        {loc.coordinates?.latitude?.toFixed(4)}, {loc.coordinates?.longitude?.toFixed(4)}
-                      </td>
-                      <td className={`small fw-bold ${status.color}`}>
-                        {loc.datetimeLast?.utc ? new Date(loc.datetimeLast.utc).toLocaleString() : 'Sin datos'}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filteredLocations.length > 0 ? (
+                  filteredLocations.map((loc) => {
+                    const status = getSensorStatus(loc.datetimeLast?.utc);
+                    return (
+                      <tr key={loc.id}>
+                        <td className="fs-5 text-center">{status.icon}</td>
+                        <td className="text-muted fw-bold">#{loc.id}</td>
+                        <td className="fw-bold text-dark">{loc.name}</td>
+                        <td>{loc.country?.name || "Desconocido"}</td>
+                        <td className="text-center font-monospace small">
+                          {loc.coordinates?.latitude?.toFixed(4)}, {loc.coordinates?.longitude?.toFixed(4)}
+                        </td>
+                        <td className="small">{loc.provider?.name || "Red Pública"}</td>
+                        <td>
+                          {/* Contenedor flexible que permite que los badges salten de línea si son muchos */}
+                          <div className="d-flex flex-wrap gap-1" style={{ whiteSpace: 'normal', minWidth: '150px' }}>
+                            {loc.sensors?.map((sensor, idx) => (
+                              <span key={idx} className="badge bg-info text-dark">
+                                {sensor.parameter?.displayName}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className={`small fw-bold ${status.color}`}>
+                          {loc.datetimeLast?.utc ? new Date(loc.datetimeLast.utc).toLocaleString() : 'Sin datos'}
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan="8" className="text-center py-4 text-muted">
+                      No se encontraron resultados para "{searchTerm}"
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -66,4 +91,5 @@ const TablaDatos = ({ locations, getSensorStatus }) => {
     </div>
   );
 };
+
 export default TablaDatos;
