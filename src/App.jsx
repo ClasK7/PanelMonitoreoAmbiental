@@ -133,7 +133,7 @@ const App = () => {
       </nav>
 
       {/* 2. CUERPO PRINCIPAL (FLEXBOX) */}
-      <div className="d-flex flex-grow-1 overflow-hidden bg-light">
+      <div className="d-flex flex-grow-1 overflow-hidden">
         
         {/* BARRA LATERAL ANIMADA */}
         <div 

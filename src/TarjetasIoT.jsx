@@ -2,7 +2,7 @@ import React from 'react';
 
 const TarjetasIoT = ({ locations, getSensorStatus }) => {
   return (
-    <div className="col-md-10 p-5 bg-white" style={{ maxHeight: "100vh", overflowY: "auto" }}>
+    <div className="w-100 p-3 p-md-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h2 className="fw-bold text-secondary mb-0">Gestión de Nodos IoT</h2>
         <span className="badge bg-primary fs-6 py-2 px-3 shadow-sm">

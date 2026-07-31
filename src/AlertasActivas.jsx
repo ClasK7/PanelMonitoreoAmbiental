@@ -19,7 +19,7 @@ const AlertasActivas = ({ locations, getSensorStatus }) => {
   }, [locations, getSensorStatus]);
 
   return (
-    <div className="col-md-10 p-3 p-md-5 bg-white" style={{ maxHeight: "100vh", overflowY: "auto" }}>
+    <div className="w-100 p-3 p-md-4">
       {/* CORRECCIÓN: Flex-column en móviles, Flex-row en PC */}
       <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>

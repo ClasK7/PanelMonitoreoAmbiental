@@ -3,7 +3,7 @@ import { Bar, Line } from 'react-chartjs-2';
 
 const GraficoEnLinea = ({ selectedLocation, setActiveView, chartData, bigChartData }) => {
   return (
-    <div className="col-md-10 p-5 bg-white">
+    <div className="w-100 p-3 p-md-4">
       <h2 className="fw-bold text-secondary mb-4">Análisis de Telemetría en Tiempo Real</h2>
       
       {selectedLocation ? (

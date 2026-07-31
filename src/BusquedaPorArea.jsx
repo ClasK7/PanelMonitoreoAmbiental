@@ -46,7 +46,7 @@ const BusquedaPorArea = ({ isLoaded }) => {
 
   return (
     // 1. CORRECCIÓN MATEMÁTICA: col-md-10 en lugar de col-12 para que encaje junto al menú
-    <div className="col-md-10 p-3 p-md-4" style={{ maxHeight: "100vh", overflowY: "auto" }}>
+    <div className="w-100 p-3 p-md-4">
       
       {/* CABECERA */}
       <div className="mb-4 d-flex justify-content-between align-items-end">
