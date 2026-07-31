@@ -25,7 +25,7 @@ const BusquedaPorArea = ({ isLoaded }) => {
     try {
       // 3. Hacemos la petición usando nuestro Proxy de Vercel
       const response = await axios.get(`/api-openaq/v3/locations?bbox=${bboxString}&limit=1000`, {
-        headers: { 'X-API-Key': 'TU_API_KEY_OPENAQ' } // Pega tu clave real de OpenAQ aquí
+        headers: { 'X-API-Key': '8b9668b0efee71fb9fd9f6744aca66a048aa1f5557cd3773e647306e04584d3a' } // Pega tu clave real de OpenAQ aquí
       });
       
       if (response.data.results) {
