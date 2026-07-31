@@ -7,29 +7,25 @@ const BusquedaPorArea = ({ isLoaded }) => {
   const [loading, setLoading] = useState(false);
   const [rectArea, setRectArea] = useState(null);
 
-  // Centramos por defecto en Ecuador
-  const defaultCenter = { lat: -1.0286, lng: -79.4635 }; 
+  // Centro inicial ajustado a las coordenadas de Quito
+  const defaultCenter = { lat: -0.2298, lng: -78.5249 }; 
 
   const handleRectangleComplete = async (rectangle) => {
     setLoading(true);
     
-    // 1. Extraemos los límites (Bounds) del rectángulo dibujado
     const bounds = rectangle.getBounds();
-    const sw = bounds.getSouthWest(); // Esquina inferior izquierda (Mínimos)
-    const ne = bounds.getNorthEast(); // Esquina superior derecha (Máximos)
+    const sw = bounds.getSouthWest(); 
+    const ne = bounds.getNorthEast(); 
 
-    // 2. Formateamos el bbox según la documentación de OpenAQ (minX, minY, maxX, maxY)
     const bboxString = `${sw.lng()},${sw.lat()},${ne.lng()},${ne.lat()}`;
     setRectArea(bboxString);
 
     try {
-      // 3. Hacemos la petición usando nuestro Proxy de Vercel
       const response = await axios.get(`/api-openaq/v3/locations?bbox=${bboxString}&limit=1000`, {
-        headers: { 'X-API-Key': '8b9668b0efee71fb9fd9f6744aca66a048aa1f5557cd3773e647306e04584d3a' } // Pega tu clave real de OpenAQ aquí
+        headers: { 'X-API-Key': import.meta.env.VITE_OPENAQ_API_KEY } 
       });
       
       if (response.data.results) {
-        // Filtramos para asegurar que tengan coordenadas válidas
         const validos = response.data.results.filter(loc => loc.coordinates);
         setAreaLocations(validos);
       }
@@ -39,100 +35,133 @@ const BusquedaPorArea = ({ isLoaded }) => {
     }
     
     setLoading(false);
-    // Borramos el rectángulo rojo para mantener el mapa limpio, ya que dibujaremos los marcadores
     rectangle.setMap(null); 
   };
 
+  // Función interna para determinar si el nodo está vivo (Reportó en las últimas 24h)
+  const isNodeActive = (dateString) => {
+    if (!dateString) return false;
+    const lastUpdate = new Date(dateString);
+    const diffHrs = (new Date() - lastUpdate) / (1000 * 60 * 60);
+    return diffHrs < 24;
+  };
+
   return (
-    <div className="col-12 p-3 p-md-5 bg-white" style={{ maxHeight: "100vh", overflowY: "auto" }}>
-      <div className="mb-4">
-        <h2 className="fw-bold text-secondary mb-0">Búsqueda Espacial (Bounding Box)</h2>
-        <p className="text-muted mt-1">Selecciona la herramienta de rectángulo en el mapa y encierra un país o ciudad para extraer todos sus dispositivos.</p>
+    <div className="col-12 p-3 p-md-4 bg-light" style={{ maxHeight: "100vh", overflowY: "auto" }}>
+      
+      {/* CABECERA */}
+      <div className="mb-4 d-flex justify-content-between align-items-end">
+        <div>
+          <h2 className="fw-bold text-secondary mb-0">Búsqueda Espacial (Bounding Box)</h2>
+          <p className="text-muted mt-1 mb-0">Traza un cuadrante en el mapa para extraer la telemetría de los dispositivos en esa zona.</p>
+        </div>
+        {rectArea && (
+          <div className="text-end d-none d-md-block">
+            <small className="text-muted fw-bold d-block">BBOX (SW, NE):</small>
+            <code className="bg-white p-1 px-2 rounded border text-danger">{rectArea}</code>
+          </div>
+        )}
       </div>
 
-      <div className="row g-4">
-        {/* MAPA Y HERRAMIENTA DE DIBUJO */}
-        <div className="col-md-8">
-          <div className="card shadow-sm p-2 border-0" style={{ height: "60vh" }}>
-            {isLoaded ? (
-              <GoogleMap mapContainerStyle={{ height: "100%", width: "100%", borderRadius: "8px" }} zoom={5} center={defaultCenter}>
-                <DrawingManager
-                  onRectangleComplete={handleRectangleComplete}
-                  options={{
-                    drawingControl: true,
-                    drawingControlOptions: {
-                      position: window.google.maps.ControlPosition.TOP_CENTER,
-                      drawingModes: [window.google.maps.drawing.OverlayType.RECTANGLE],
-                    },
-                    rectangleOptions: {
-                      fillColor: '#e74c3c',
-                      fillOpacity: 0.2,
-                      strokeWeight: 2,
-                      clickable: false,
-                      editable: false,
-                      zIndex: 1,
-                    },
-                  }}
-                />
-                
-                {/* Dibujamos los sensores encontrados dentro del área */}
-                {areaLocations.map(loc => (
-                  <Marker 
-                    key={`bbox-${loc.id}`} 
-                    position={{ lat: loc.coordinates.latitude, lng: loc.coordinates.longitude }} 
-                    title={loc.name}
-                  />
-                ))}
-              </GoogleMap>
-            ) : (
-              <div className="d-flex justify-content-center align-items-center h-100">
-                <span className="text-muted">Cargando motor espacial...</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* PANEL DE RESULTADOS */}
-        <div className="col-md-4">
-          <div className="card shadow-sm p-4 border-0 h-100 bg-light">
-            <h5 className="fw-bold text-primary mb-3">Resultados del Área</h5>
+      {/* ZONA SUPERIOR: MAPA (Ancho Completo) */}
+      <div className="card shadow-sm border-0 mb-4" style={{ height: "45vh" }}>
+        {isLoaded ? (
+          <GoogleMap mapContainerStyle={{ height: "100%", width: "100%", borderRadius: "8px" }} zoom={6} center={defaultCenter}>
+            <DrawingManager
+              onRectangleComplete={handleRectangleComplete}
+              options={{
+                drawingControl: true,
+                drawingControlOptions: {
+                  position: window.google.maps.ControlPosition.TOP_CENTER,
+                  drawingModes: [window.google.maps.drawing.OverlayType.RECTANGLE],
+                },
+                rectangleOptions: {
+                  fillColor: '#3498db',
+                  fillOpacity: 0.2,
+                  strokeWeight: 2,
+                  strokeColor: '#2980b9',
+                  clickable: false,
+                  editable: false,
+                  zIndex: 1,
+                },
+              }}
+            />
             
-            {loading ? (
-              <div className="text-center mt-5">
-                <div className="spinner-border text-primary" role="status"></div>
-                <p className="mt-2 text-muted">Analizando cuadrante espacial...</p>
-              </div>
-            ) : (
-              <>
-                <div className="mb-4">
-                  <h1 className="display-4 fw-bold text-dark mb-0">{areaLocations.length}</h1>
-                  <span className="text-muted">Nodos IoT encontrados</span>
-                </div>
-                
-                {rectArea && (
-                  <div className="mb-3">
-                    <small className="text-muted fw-bold d-block">BBOX (SW lng, SW lat, NE lng, NE lat):</small>
-                    <code className="bg-white p-2 d-block rounded border">{rectArea}</code>
-                  </div>
-                )}
-
-                <hr/>
-                <div className="table-responsive" style={{ maxHeight: "30vh", overflowY: "auto" }}>
-                  <table className="table table-sm table-hover text-nowrap">
-                    <tbody>
-                      {areaLocations.map(loc => (
-                        <tr key={loc.id}>
-                          <td><strong>#{loc.id}</strong></td>
-                          <td className="text-truncate" style={{maxWidth: "150px"}}>{loc.name}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
+            {areaLocations.map(loc => (
+              <Marker 
+                key={`bbox-${loc.id}`} 
+                position={{ lat: loc.coordinates.latitude, lng: loc.coordinates.longitude }} 
+                title={loc.name}
+              />
+            ))}
+          </GoogleMap>
+        ) : (
+          <div className="d-flex justify-content-center align-items-center h-100">
+            <div className="spinner-border text-primary" role="status"></div>
           </div>
+        )}
+      </div>
+
+      {/* ZONA INFERIOR: TABLA DE RESULTADOS */}
+      <div className="card shadow-sm border-0 bg-white p-3">
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="fw-bold text-secondary mb-0">Resultados de la Extracción</h5>
+          <span className="badge bg-primary fs-6 rounded-pill px-3 py-2">
+            {areaLocations.length} Nodos encontrados
+          </span>
         </div>
+
+        {loading ? (
+          <div className="text-center py-5">
+            <div className="spinner-border text-primary mb-2" role="status"></div>
+            <p className="text-muted">Procesando cuadrante espacial...</p>
+          </div>
+        ) : areaLocations.length === 0 ? (
+          <div className="text-center py-5 bg-light rounded border-dashed">
+            <p className="text-muted mb-0">Dibuja un rectángulo en el mapa para ver los dispositivos.</p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="table table-striped table-hover align-middle mb-0 text-nowrap">
+              <thead className="table-dark">
+                <tr>
+                  <th className="py-3">ID</th>
+                  <th className="py-3">ESTACIÓN</th>
+                  <th className="py-3">PAÍS</th>
+                  <th className="py-3">LOCALIDAD</th>
+                  <th className="py-3 text-center">SENSORES</th>
+                  <th className="py-3 text-center">COORDENADAS</th>
+                  <th className="py-3 text-center">ESTADO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {areaLocations.map(loc => {
+                  const isActive = isNodeActive(loc.datetimeLast?.utc);
+                  return (
+                    <tr key={loc.id}>
+                      <td className="fw-bold text-muted">{loc.id}</td>
+                      <td className="fw-bold text-dark">{loc.name}</td>
+                      <td>{loc.country?.name || "Desconocido"}</td>
+                      {/* OpenAQ a veces manda locality o city, validamos ambas o ponemos "No disponible" */}
+                      <td>{loc.locality || loc.city || <span className="text-muted fst-italic">No disponible</span>}</td>
+                      <td className="text-center fw-bold">{loc.sensors?.length || 0}</td>
+                      <td className="text-center font-monospace small text-muted">
+                        {loc.coordinates.latitude.toFixed(4)}, {loc.coordinates.longitude.toFixed(4)}
+                      </td>
+                      <td className="text-center">
+                        {isActive ? (
+                          <span className="badge rounded-pill bg-success px-3 py-2 shadow-sm">Activo</span>
+                        ) : (
+                          <span className="badge rounded-pill bg-danger px-3 py-2 shadow-sm opacity-75">Inactivo</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
