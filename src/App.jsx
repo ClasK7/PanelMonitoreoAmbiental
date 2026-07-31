@@ -18,7 +18,7 @@ const App = () => {
   // Cargador inteligente de Google Maps
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: "AIzaSyCPiibj5tq0cloahKf1km4p9j361spYwx0",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries: libreriasMapa,
     version: "3.64"
   });
@@ -81,7 +81,7 @@ const App = () => {
   useEffect(() => {
     setLoading(true);
     axios.get(`/api-openaq/v3/locations?limit=${fetchLimit}`, {
-      headers: { 'X-API-Key': '8b9668b0efee71fb9fd9f6744aca66a048aa1f5557cd3773e647306e04584d3a' } 
+      headers: { 'X-API-Key': import.meta.env.VITE_OPENAQ_API_KEY } 
     })
       .then(response => {
         if (response.data.results && response.data.results.length > 0) {
