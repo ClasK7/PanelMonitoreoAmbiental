@@ -7,7 +7,6 @@ const BusquedaPorArea = ({ isLoaded }) => {
   const [loading, setLoading] = useState(false);
   const [rectArea, setRectArea] = useState(null);
 
-  // Centro inicial ajustado a las coordenadas de Quito
   const defaultCenter = { lat: -0.2298, lng: -78.5249 }; 
 
   const handleRectangleComplete = async (rectangle) => {
@@ -38,7 +37,6 @@ const BusquedaPorArea = ({ isLoaded }) => {
     rectangle.setMap(null); 
   };
 
-  // Función interna para determinar si el nodo está vivo (Reportó en las últimas 24h)
   const isNodeActive = (dateString) => {
     if (!dateString) return false;
     const lastUpdate = new Date(dateString);
@@ -47,24 +45,26 @@ const BusquedaPorArea = ({ isLoaded }) => {
   };
 
   return (
-    <div className="col-12 p-3 p-md-4 bg-light" style={{ maxHeight: "100vh", overflowY: "auto" }}>
+    // 1. CORRECCIÓN MATEMÁTICA: col-md-10 en lugar de col-12 para que encaje junto al menú
+    <div className="col-md-10 p-3 p-md-4" style={{ maxHeight: "100vh", overflowY: "auto" }}>
       
       {/* CABECERA */}
       <div className="mb-4 d-flex justify-content-between align-items-end">
         <div>
-          <h2 className="fw-bold text-secondary mb-0">Búsqueda Espacial (Bounding Box)</h2>
-          <p className="text-muted mt-1 mb-0">Traza un cuadrante en el mapa para extraer la telemetría de los dispositivos en esa zona.</p>
+          <h2 className="fw-bold mb-0">Búsqueda Espacial (Bounding Box)</h2>
+          <p className="opacity-75 mt-1 mb-0">Traza un cuadrante en el mapa para extraer la telemetría de los dispositivos en esa zona.</p>
         </div>
         {rectArea && (
           <div className="text-end d-none d-md-block">
-            <small className="text-muted fw-bold d-block">BBOX (SW, NE):</small>
-            <code className="bg-white p-1 px-2 rounded border text-danger">{rectArea}</code>
+            <small className="opacity-75 fw-bold d-block">BBOX (SW, NE):</small>
+            <code className="p-1 px-2 rounded border text-danger">{rectArea}</code>
           </div>
         )}
       </div>
 
-      {/* ZONA SUPERIOR: MAPA (Ancho Completo) */}
-      <div className="card shadow-sm border-0 mb-4" style={{ height: "45vh" }}>
+      {/* ZONA SUPERIOR: MAPA */}
+      {/* Se removieron los fondos blancos forzados para respetar tu Dark Mode */}
+      <div className="card shadow-sm border-0 mb-4" style={{ height: "45vh", background: "transparent" }}>
         {isLoaded ? (
           <GoogleMap mapContainerStyle={{ height: "100%", width: "100%", borderRadius: "8px" }} zoom={6} center={defaultCenter}>
             <DrawingManager
@@ -103,9 +103,9 @@ const BusquedaPorArea = ({ isLoaded }) => {
       </div>
 
       {/* ZONA INFERIOR: TABLA DE RESULTADOS */}
-      <div className="card shadow-sm border-0 bg-white p-3">
+      <div className="card shadow-sm border-0 p-3" style={{ background: "transparent" }}>
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="fw-bold text-secondary mb-0">Resultados de la Extracción</h5>
+          <h5 className="fw-bold mb-0">Resultados de la Extracción</h5>
           <span className="badge bg-primary fs-6 rounded-pill px-3 py-2">
             {areaLocations.length} Nodos encontrados
           </span>
@@ -114,16 +114,16 @@ const BusquedaPorArea = ({ isLoaded }) => {
         {loading ? (
           <div className="text-center py-5">
             <div className="spinner-border text-primary mb-2" role="status"></div>
-            <p className="text-muted">Procesando cuadrante espacial...</p>
+            <p className="opacity-75">Procesando cuadrante espacial...</p>
           </div>
         ) : areaLocations.length === 0 ? (
-          <div className="text-center py-5 bg-light rounded border-dashed">
-            <p className="text-muted mb-0">Dibuja un rectángulo en el mapa para ver los dispositivos.</p>
+          <div className="text-center py-5 rounded border-dashed opacity-50">
+            <p className="mb-0">Dibuja un rectángulo en el mapa para ver los dispositivos.</p>
           </div>
         ) : (
           <div className="table-responsive">
-            <table className="table table-striped table-hover align-middle mb-0 text-nowrap">
-              <thead className="table-dark">
+            <table className="table table-hover align-middle mb-0 text-nowrap">
+              <thead>
                 <tr>
                   <th className="py-3">ID</th>
                   <th className="py-3">ESTACIÓN</th>
@@ -139,13 +139,12 @@ const BusquedaPorArea = ({ isLoaded }) => {
                   const isActive = isNodeActive(loc.datetimeLast?.utc);
                   return (
                     <tr key={loc.id}>
-                      <td className="fw-bold text-muted">{loc.id}</td>
-                      <td className="fw-bold text-dark">{loc.name}</td>
+                      <td className="fw-bold opacity-75">{loc.id}</td>
+                      <td className="fw-bold">{loc.name}</td>
                       <td>{loc.country?.name || "Desconocido"}</td>
-                      {/* OpenAQ a veces manda locality o city, validamos ambas o ponemos "No disponible" */}
-                      <td>{loc.locality || loc.city || <span className="text-muted fst-italic">No disponible</span>}</td>
+                      <td>{loc.locality || loc.city || <span className="opacity-50 fst-italic">No disponible</span>}</td>
                       <td className="text-center fw-bold">{loc.sensors?.length || 0}</td>
-                      <td className="text-center font-monospace small text-muted">
+                      <td className="text-center font-monospace small opacity-75">
                         {loc.coordinates.latitude.toFixed(4)}, {loc.coordinates.longitude.toFixed(4)}
                       </td>
                       <td className="text-center">
