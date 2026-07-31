@@ -10,12 +10,16 @@ import GraficoEnLinea from './GraficosEnLinea';
 import TarjetasIoT from './TarjetasIoT';
 import TablaDatos from './TablaDatos';
 import AlertasActivas from './AlertasActivas';
+import BusquedaPorArea from './BusquedaPorArea';
+
+const libreriasMapa = ['drawing'];
 
 const App = () => {
   // Cargador inteligente de Google Maps
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: "AIzaSyCPiibj5tq0cloahKf1km4p9j361spYwx0"
+    googleMapsApiKey: "AIzaSyCPiibj5tq0cloahKf1km4p9j361spYwx0",
+    libraries: libreriasMapa
   });
 
   const [locations, setLocations] = useState([]);
@@ -135,6 +139,9 @@ const App = () => {
             <li className="nav-item border-md-top border-secondary mt-md-4 pt-md-4">
               <span className={`nav-link text-nowrap ${activeView === 'alertas' ? 'text-danger fw-bold border-bottom border-md-start border-3 border-danger bg-dark bg-opacity-25' : 'text-danger opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('alertas')}>⚠️ Alertas Activas</span>
             </li>
+            <li className="nav-item border-md-top border-secondary mt-md-4 pt-md-4">
+              <span className={`nav-link text-nowrap ${activeView === 'bbox' ? 'text-warning fw-bold border-bottom border-md-start border-3 border-warning bg-dark bg-opacity-25' : 'text-warning opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('bbox')}>🔲 Búsqueda por Área</span>
+            </li>
           </ul>
         </div>
 
@@ -245,6 +252,7 @@ const App = () => {
         {activeView === 'tarjetas' && <TarjetasIoT locations={locations} getSensorStatus={getSensorStatus} />}
         {activeView === 'tablas' && <TablaDatos locations={locations} getSensorStatus={getSensorStatus} />}
         {activeView === 'alertas' && <AlertasActivas locations={locations} getSensorStatus={getSensorStatus} />}
+        {activeView === 'bbox' && <BusquedaPorArea isLoaded={isLoaded} />}
         
       </div>
     </div>
