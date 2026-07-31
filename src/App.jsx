@@ -19,7 +19,8 @@ const App = () => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: "AIzaSyCPiibj5tq0cloahKf1km4p9j361spYwx0",
-    libraries: libreriasMapa
+    libraries: libreriasMapa,
+    version: "3.64"
   });
 
   const [locations, setLocations] = useState([]);
