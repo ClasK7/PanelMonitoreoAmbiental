@@ -6,11 +6,11 @@ import 'chart.js/auto';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'; 
 
-import GraficoEnLinea from './GraficosEnLinea';
-import TarjetasIoT from './TarjetasIoT';
-import TablaDatos from './TablaDatos';
-import AlertasActivas from './AlertasActivas';
-import BusquedaPorArea from './BusquedaPorArea';
+import GraficoEnLinea from './components/GraficosEnLinea';
+import TarjetasIoT from './components/TarjetasIoT';
+import TablaDatos from './components/TablaDatos';
+import AlertasActivas from './components/AlertasActivas';
+import BusquedaPorArea from './components/BusquedaPorArea';
 
 const libreriasMapa = ['drawing'];
 
