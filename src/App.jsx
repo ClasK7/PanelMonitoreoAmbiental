@@ -29,7 +29,28 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   
   const [activeView, setActiveView] = useState('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);//Para detectar otras pantallas
+  const [activeView, setActiveView] = useState('dashboard');
+  
+  // 1. Nuevos estados para detectar móviles
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
+
+  // 2. Escuchador en tiempo real del tamaño de la pantalla
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) setIsSidebarOpen(true); // Si se voltea a PC, el menú se abre por defecto
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 3. Función de Auto-Cierre al navegar
+  const handleNavigation = (view) => {
+    setActiveView(view);
+    if (isMobile) setIsSidebarOpen(false); // Cierra la pantalla completa en móviles
+  };//Para detectar otras pantallas
   const [selectedCountry, setSelectedCountry] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [inputLimit, setInputLimit] = useState(100);
@@ -135,37 +156,55 @@ const App = () => {
       {/* 2. CUERPO PRINCIPAL (FLEXBOX) */}
       <div className="d-flex flex-grow-1 overflow-hidden">
         
-        {/* BARRA LATERAL ANIMADA */}
+        {/* BARRA LATERAL ANIMADA (Estilo Full-Screen Móvil) */}
         <div 
-          className="bg-dark flex-shrink-0 shadow sidebar-responsive" 
+          className="bg-dark flex-shrink-0 shadow" 
           style={{ 
-            width: isSidebarOpen ? '250px' : '70px', 
+            position: isMobile ? 'fixed' : 'relative',
+            top: 0,
+            left: 0,
+            height: '100vh',
+            zIndex: 1050,
+            width: isMobile ? (isSidebarOpen ? '100%' : '0px') : (isSidebarOpen ? '250px' : '70px'), 
             transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
             overflowX: 'hidden',
-            backgroundColor: '#2c3e50' 
+            backgroundColor: '#131314' /* Color oscuro idéntico a la app de Gemini */
           }}
         >
+          {/* CABECERA MÓVIL CON BOTÓN DE CERRAR "X" */}
+          {isMobile && (
+            <div className="d-flex justify-content-between align-items-center p-3 mb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <span className="text-white fw-bold fs-5">Menú de Navegación</span>
+              <button 
+                className="btn btn-link text-white fs-3 text-decoration-none p-0 lh-1" 
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           <ul className="nav flex-column gap-2 p-2 mt-2 text-nowrap">
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'dashboard' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('dashboard')} title="Dashboard">
+              <span className={`nav-link rounded ${activeView === 'dashboard' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('dashboard')} title="Dashboard">
                 <span className="fs-5">📊</span>
                 <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Dashboard</span>
               </span>
             </li>
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'grafico' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('grafico')} title="Gráfico en línea">
+              <span className={`nav-link rounded ${activeView === 'grafico' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('grafico')} title="Gráfico en línea">
                 <span className="fs-5">📈</span>
                 <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Gráfico en línea</span>
               </span>
             </li>
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'tarjetas' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('tarjetas')} title="Tarjetas IoT">
+              <span className={`nav-link rounded ${activeView === 'tarjetas' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('tarjetas')} title="Tarjetas IoT">
                 <span className="fs-5">💳</span>
                 <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Tarjetas IoT</span>
               </span>
             </li>
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'tablas' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('tablas')} title="Tablas de datos">
+              <span className={`nav-link rounded ${activeView === 'tablas' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('tablas')} title="Tablas de datos">
                 <span className="fs-5">📋</span>
                 <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Tablas de datos</span>
               </span>
@@ -173,13 +212,13 @@ const App = () => {
             
             {/* AQUÍ SE ELIMINARON LAS CLASES QUE CAUSABAN LA SEPARACIÓN (mt-4, pt-4, border-top) */}
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'alertas' ? 'bg-danger text-white fw-bold' : 'text-danger opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('alertas')} title="Alertas Activas">
+              <span className={`nav-link rounded ${activeView === 'alertas' ? 'bg-danger text-white fw-bold' : 'text-danger opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('alertas')} title="Alertas Activas">
                 <span className="fs-5">⚠️</span>
                 <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Alertas Activas</span>
               </span>
             </li>
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'bbox' ? 'bg-warning text-dark fw-bold' : 'text-warning opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => setActiveView('bbox')} title="Búsqueda por Área">
+              <span className={`nav-link rounded ${activeView === 'bbox' ? 'bg-warning text-dark fw-bold' : 'text-warning opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('bbox')} title="Búsqueda por Área">
                 <span className="fs-5">🔲</span>
                 <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Búsqueda por Área</span>
               </span>
