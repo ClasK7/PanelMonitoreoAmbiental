@@ -29,7 +29,7 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   
   const [activeView, setActiveView] = useState('dashboard');
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);//Para detectar otras pantallas
   const [selectedCountry, setSelectedCountry] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [inputLimit, setInputLimit] = useState(100);
@@ -137,7 +137,7 @@ const App = () => {
         
         {/* BARRA LATERAL ANIMADA */}
         <div 
-          className="bg-dark flex-shrink-0 shadow" 
+          className="bg-dark flex-shrink-0 shadow sidebar-responsive" 
           style={{ 
             width: isSidebarOpen ? '250px' : '70px', 
             transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 

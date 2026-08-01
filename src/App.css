@@ -33,3 +33,12 @@
 .cursor-pointer {
   cursor: pointer;
 }
+
+/* Ajuste Responsivo para la Barra Lateral en Móviles */
+@media (max-width: 768px) {
+  .sidebar-responsive {
+    position: absolute;
+    z-index: 1050;
+    height: 100vh;
+  }
+}
