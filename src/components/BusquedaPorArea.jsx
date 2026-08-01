@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { GoogleMap, Marker, DrawingManager } from '@react-google-maps/api';
 import { Line, Bar } from 'react-chartjs-2';
@@ -9,16 +9,23 @@ const BusquedaPorArea = ({ isLoaded }) => {
   const [loading, setLoading] = useState(false);
   const [rectArea, setRectArea] = useState(null);
   
-  // Nuevos estados para ordenamiento y selección
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [selectedNode, setSelectedNode] = useState(null);
-  const [chartSensor, setChartSensor] = useState('PM2.5 µg/m³');
+  const [chartSensor, setChartSensor] = useState('');
 
   const defaultCenter = { lat: -0.2298, lng: -78.5249 }; 
 
+  // Cuando se selecciona un nuevo nodo, el menú desplegable del gráfico 
+  // se ajusta automáticamente al primer sensor que tenga disponible esa estación.
+  useEffect(() => {
+    if (selectedNode && selectedNode.sensors && selectedNode.sensors.length > 0) {
+      setChartSensor(`${selectedNode.sensors[0].parameter.displayName} ${selectedNode.sensors[0].parameter.units}`);
+    }
+  }, [selectedNode]);
+
   const handleRectangleComplete = async (rectangle) => {
     setLoading(true);
-    setSelectedNode(null); // Limpiamos selección al buscar nueva área
+    setSelectedNode(null); 
     
     const bounds = rectangle.getBounds();
     const sw = bounds.getSouthWest(); 
@@ -52,9 +59,8 @@ const BusquedaPorArea = ({ isLoaded }) => {
     return diffHrs < 24;
   };
 
-  // Lógica de Ordenamiento
   const handleSort = (key) => {
-    let direction = 'desc'; // Por defecto mostrar activos primero al dar clic
+    let direction = 'desc'; 
     if (sortConfig.key === key && sortConfig.direction === 'desc') {
       direction = 'asc';
     }
@@ -76,16 +82,32 @@ const BusquedaPorArea = ({ isLoaded }) => {
     return sortableItems;
   }, [areaLocations, sortConfig]);
 
-  // --- GENERACIÓN DE DATOS SIMULADOS PARA GRÁFICOS ---
-  // (En producción, esto se reemplazaría por una llamada a tu API de Firebase)
-  
+  // --- GENERADOR DE DATOS DINÁMICOS PARA GRÁFICOS ---
+  // Crea una curva visual única basada en el ID del nodo para simular telemetría en tiempo real
+  const generateDynamicData = (baseId, isPattern = false) => {
+    if (!baseId) return [];
+    let seed = baseId % 30; // Usamos el ID del nodo como "semilla" matemática
+    const data = [];
+    for (let i = 0; i < (isPattern ? 8 : 24); i++) {
+      let noise = Math.sin(i + seed) * 10;
+      let val = Math.abs(15 + noise + (Math.random() * 5));
+      
+      if (isPattern) {
+        data.push([Math.max(0, val - 5), val + 5]); // Genera rangos [min, max] para las cajas
+      } else {
+        data.push(val); // Puntos de línea
+      }
+    }
+    return data;
+  };
+
   const lineChartData = {
     labels: ['21:00', '22:00', '23:00', '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'],
     datasets: [{
       label: chartSensor,
-      data: [20, 17, 17.5, 16.5, 15, 15.2, 16.5, 19, 16.5, 18.2, 18.5, 19.8, 28, 28, 28.2, 22.5, 22, 27, 29.5, 35, 38, 42, 41, 21],
-      borderColor: '#8b5cf6', // Morado exacto de tu captura
-      backgroundColor: 'rgba(139, 92, 246, 0.15)', // Relleno translúcido
+      data: generateDynamicData(selectedNode?.id, false),
+      borderColor: '#8b5cf6', 
+      backgroundColor: 'rgba(139, 92, 246, 0.15)',
       fill: true,
       tension: 0.4,
       pointRadius: 3,
@@ -95,22 +117,19 @@ const BusquedaPorArea = ({ isLoaded }) => {
   };
 
   const lineChartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
+    responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
     scales: {
-      y: { grid: { color: 'rgba(255,255,255,0.1)', borderDash: [5, 5] }, ticks: { color: '#9ca3af' }, min: 0, max: 50 },
+      y: { grid: { color: 'rgba(255,255,255,0.1)', borderDash: [5, 5] }, ticks: { color: '#9ca3af' }, min: 0 },
       x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
     }
   };
 
-  // Gráfico de Patrones (Barras Flotantes para simular el rango IQR)
   const patternData = {
     labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
     datasets: [{
       label: 'Rango del Percentil (25th - 75th)',
-      data: [[9, 15], [8, 14], [8.5, 15.5], [10, 16], [12, 20], [13, 21], [11, 18], [9.5, 15.5]],
-      backgroundColor: '#1e3a8a', // Azul oscuro de tu captura
+      data: generateDynamicData(selectedNode?.id, true),
+      backgroundColor: '#1e3a8a', 
       borderRadius: 4,
       barPercentage: 0.6
     }]
@@ -119,7 +138,6 @@ const BusquedaPorArea = ({ isLoaded }) => {
   return (
     <div className="w-100 p-3 p-md-4 text-white">
       
-      {/* CABECERA */}
       <div className="mb-4 d-flex justify-content-between align-items-end">
         <div>
           <h2 className="fw-bold mb-0">Búsqueda Espacial (Bounding Box)</h2>
@@ -133,7 +151,6 @@ const BusquedaPorArea = ({ isLoaded }) => {
         )}
       </div>
 
-      {/* MAPA */}
       <div className="card shadow-sm border-0 mb-4 bg-transparent" style={{ height: "40vh" }}>
         {isLoaded ? (
           <GoogleMap mapContainerStyle={{ height: "100%", width: "100%", borderRadius: "8px" }} zoom={6} center={defaultCenter}>
@@ -154,7 +171,6 @@ const BusquedaPorArea = ({ isLoaded }) => {
         )}
       </div>
 
-      {/* TABLA DE RESULTADOS */}
       <div className="card shadow-sm border-0 p-3 mb-4" style={{ backgroundColor: '#1c1c1c' }}>
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="fw-bold mb-0 text-white">Resultados de la Extracción</h5>
@@ -176,7 +192,6 @@ const BusquedaPorArea = ({ isLoaded }) => {
                   <th className="py-3 text-muted">LOCALIDAD</th>
                   <th className="py-3 text-center text-muted">SENSORES</th>
                   <th className="py-3 text-center text-muted">COORDENADAS</th>
-                  {/* CABECERA CLICABLE PARA ORDENAR */}
                   <th className="py-3 text-center text-white" onClick={() => handleSort('estado')} style={{ cursor: 'pointer', userSelect: 'none' }}>
                     ESTADO {sortConfig.key === 'estado' ? (sortConfig.direction === 'asc' ? '↓' : '↑') : '↕'}
                   </th>
@@ -214,88 +229,85 @@ const BusquedaPorArea = ({ isLoaded }) => {
         )}
       </div>
 
-      {/* --- PANEL DE DETALLES Y ANALÍTICA (Se muestra solo si hay un nodo seleccionado) --- */}
       {selectedNode && (
         <div className="animation-fade-in">
           
-          {/* SECCIÓN 1: CARACTERÍSTICAS */}
+          {/* SECCIÓN 1: CARACTERÍSTICAS (Traducido y Dinámico) */}
           <div className="card shadow-sm border-0 p-4 mb-4" style={{ backgroundColor: '#1c1c1c' }}>
-            <h5 className="text-muted fw-bold mb-4 tracking-wider fs-6">CHARACTERISTICS</h5>
+            <h5 className="text-muted fw-bold mb-4 tracking-wider fs-6">CARACTERÍSTICAS</h5>
             <div className="row g-4">
               <div className="col-12 col-md-6">
-                <div className="d-flex mb-3"><span className="text-muted w-25">Type</span><span className="text-white w-75 fw-medium d-flex align-items-center">Air sensor <span className="ms-2 rounded-circle bg-primary" style={{width: '10px', height:'10px'}}></span><br/>Stationary</span></div>
-                <div className="d-flex mb-3"><span className="text-muted w-25">Owner</span><span className="text-white w-75 fw-medium">Administrador de Red Local</span></div>
-                <div className="d-flex mb-3"><span className="text-muted w-25">Measures</span><span className="text-white w-75 fw-medium opacity-75">{selectedNode.sensors?.map(s => s.parameter?.displayName).join(', ') || 'Desconocido'}</span></div>
-                <div className="d-flex mb-3"><span className="text-muted w-25">Instrument(s)</span><span className="text-white w-75 fw-medium">Estación Multiparamétrica Genérica</span></div>
+                <div className="d-flex mb-3"><span className="text-muted w-25">Tipo</span><span className="text-white w-75 fw-medium d-flex align-items-center">{selectedNode.sensorType === 'reference grade' ? 'Grado de referencia' : 'Sensor de aire'} <span className={`ms-2 rounded-circle ${selectedNode.sensorType === 'reference grade' ? 'bg-primary' : 'bg-secondary'}`} style={{width: '10px', height:'10px'}}></span><br/>Estacionario</span></div>
+                <div className="d-flex mb-3"><span className="text-muted w-25">Propietario</span><span className="text-white w-75 fw-medium">{selectedNode.owner?.name || 'Organización Desconocida'}</span></div>
+                <div className="d-flex mb-3"><span className="text-muted w-25">Parámetros</span><span className="text-white w-75 fw-medium opacity-75">{selectedNode.sensors?.map(s => s.parameter?.displayName).join(', ') || 'Desconocido'}</span></div>
+                <div className="d-flex mb-3"><span className="text-muted w-25">Instrumento(s)</span><span className="text-white w-75 fw-medium">{selectedNode.manufacturers?.map(m => m.modelName).join(', ') || 'Monitor de Red (IoT)'}</span></div>
               </div>
               <div className="col-12 col-md-6">
-                <div className="d-flex mb-3"><span className="text-muted w-25">Name</span><span className="text-white w-75 fw-medium">{selectedNode.name}</span></div>
-                <div className="d-flex mb-3"><span className="text-muted w-25">Reporting</span><span className="text-white w-75 fw-medium">Updated {isNodeActive(selectedNode.datetimeLast?.utc) ? 'recently' : 'days ago'}<br/><span className="opacity-75 small">Última lectura: {new Date(selectedNode.datetimeLast?.utc).toLocaleDateString()}</span></span></div>
-                <div className="d-flex mb-3"><span className="text-muted w-25">Provider</span><span className="text-white w-75 fw-medium">{selectedNode.provider?.name || 'OpenAQ Network'}</span></div>
-                <div className="d-flex mb-3"><span className="text-muted w-25">Licenses</span><span className="text-primary w-75 fw-medium text-decoration-underline cursor-pointer">CC BY 4.0</span></div>
+                <div className="d-flex mb-3"><span className="text-muted w-25">Nombre</span><span className="text-white w-75 fw-medium">{selectedNode.name}</span></div>
+                <div className="d-flex mb-3"><span className="text-muted w-25">Reporte</span><span className="text-white w-75 fw-medium">Actualizado {isNodeActive(selectedNode.datetimeLast?.utc) ? 'recientemente' : 'hace días'}<br/><span className="opacity-75 small">Reportando desde {selectedNode.datetimeFirst?.utc ? new Date(selectedNode.datetimeFirst.utc).toLocaleDateString() : 'fecha desconocida'}</span></span></div>
+                <div className="d-flex mb-3"><span className="text-muted w-25">Proveedor</span><span className="text-white w-75 fw-medium">{selectedNode.provider?.name || 'OpenAQ'}</span></div>
+                <div className="d-flex mb-3"><span className="text-muted w-25">Licencias</span><span className="text-primary w-75 fw-medium text-decoration-underline cursor-pointer">{selectedNode.licenses?.map(l => l.name).join(', ') || 'Dominio Público'}</span></div>
               </div>
             </div>
           </div>
 
-          {/* SECCIÓN 2: LATEST READINGS (Gráfico de Líneas) */}
+          {/* SECCIÓN 2: ÚLTIMAS LECTURAS (Dinámico según sensor seleccionado) */}
           <div className="card shadow-sm border-0 p-4 mb-4" style={{ backgroundColor: '#1c1c1c' }}>
-            <h4 className="fw-bold mb-4 text-info">Latest Readings</h4>
+            <h4 className="fw-bold mb-4 text-info">Últimas Lecturas</h4>
             
-            {/* Controles del gráfico */}
             <div className="d-flex flex-wrap gap-3 mb-4">
               <div>
                 <label className="text-white small mb-1">Sensor</label>
                 <select className="form-select form-select-sm bg-dark text-white border-secondary" value={chartSensor} onChange={(e) => setChartSensor(e.target.value)}>
                   {selectedNode.sensors?.map((s, i) => <option key={i} value={`${s.parameter?.displayName} ${s.parameter?.units}`}>{s.parameter?.displayName} {s.parameter?.units}</option>)}
-                  <option value="PM2.5 µg/m³">PM2.5 µg/m³</option>
                 </select>
               </div>
               <div>
-                <label className="text-white small mb-1">Time range</label>
-                <select className="form-select form-select-sm bg-dark text-white border-secondary"><option>Last 24 hours</option></select>
+                <label className="text-white small mb-1">Rango de tiempo</label>
+                <select className="form-select form-select-sm bg-dark text-white border-secondary"><option>Últimas 24 horas</option></select>
               </div>
               <div>
-                <label className="text-white small mb-1">Scale type</label>
-                <select className="form-select form-select-sm bg-dark text-white border-secondary"><option>Linear</option></select>
+                <label className="text-white small mb-1">Tipo de escala</label>
+                <select className="form-select form-select-sm bg-dark text-white border-secondary"><option>Lineal</option></select>
               </div>
-              <div className="d-flex align-items-end"><button className="btn btn-sm text-white px-4" style={{ backgroundColor: '#0d9488' }}>Update</button></div>
+              <div className="d-flex align-items-end"><button className="btn btn-sm text-white px-4" style={{ backgroundColor: '#0d9488' }}>Actualizar</button></div>
             </div>
 
-            {/* Renderizado de la Línea */}
             <div style={{ height: '300px' }}><Line data={lineChartData} options={lineChartOptions} /></div>
             
             <div className="mt-3 text-muted small d-flex align-items-center">
-              <span className="fs-5 me-2">🕒</span> Chart shows local times (America/Guayaquil UTC-05:00)
+              <span className="fs-5 me-2">🕒</span> El gráfico muestra la hora local (America/Guayaquil UTC-05:00)
             </div>
           </div>
 
-          {/* SECCIÓN 3: PATTERNS (Gráfico de Cajas simulado) */}
+          {/* SECCIÓN 3: PATRONES */}
           <div className="card shadow-sm border-0 p-4 mb-4" style={{ backgroundColor: '#1c1c1c' }}>
-            <h4 className="fw-bold mb-4 text-info">Patterns</h4>
+            <h4 className="fw-bold mb-4 text-info">Patrones</h4>
             
             <div className="d-flex flex-wrap gap-3 mb-4">
               <div>
                 <label className="text-white small mb-1">Sensor</label>
-                <select className="form-select form-select-sm bg-dark text-white border-secondary"><option>PM1 µg/m³</option></select>
+                <select className="form-select form-select-sm bg-dark text-white border-secondary" value={chartSensor} onChange={(e) => setChartSensor(e.target.value)}>
+                   {selectedNode.sensors?.map((s, i) => <option key={i} value={`${s.parameter?.displayName} ${s.parameter?.units}`}>{s.parameter?.displayName} {s.parameter?.units}</option>)}
+                </select>
               </div>
               <div>
-                <label className="text-white small mb-1">Time range</label>
+                <label className="text-white small mb-1">Rango de tiempo</label>
                 <select className="form-select form-select-sm bg-dark text-white border-secondary"><option>2026</option></select>
               </div>
-              <div className="d-flex align-items-end"><button className="btn btn-sm text-white px-4" style={{ backgroundColor: '#0d9488' }}>Update</button></div>
+              <div className="d-flex align-items-end"><button className="btn btn-sm text-white px-4" style={{ backgroundColor: '#0d9488' }}>Actualizar</button></div>
             </div>
 
-            <h6 className="text-white fw-bold mb-3">Hour of day</h6>
-            <button className="btn btn-sm btn-outline-secondary mb-4 text-white">View as table 📊</button>
+            <h6 className="text-white fw-bold mb-3">Hora del día</h6>
+            <button className="btn btn-sm btn-outline-secondary mb-4 text-white">Ver como tabla 📊</button>
 
-            {/* Renderizado de Patrones (Barras flotantes) */}
             <div style={{ height: '300px' }}>
               <Bar 
                 data={patternData} 
                 options={{
                   responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
                   scales: {
-                    y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' }, min: 0, max: 35 },
+                    y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#9ca3af' }, min: 0 },
                     x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
                   }
                 }} 
@@ -303,7 +315,7 @@ const BusquedaPorArea = ({ isLoaded }) => {
             </div>
 
             <div className="mt-3 text-muted small d-flex align-items-center">
-              <span className="fs-5 me-2">🕒</span> Chart shows local times (America/Guayaquil UTC-05:00)
+              <span className="fs-5 me-2">🕒</span> El gráfico muestra la hora local (America/Guayaquil UTC-05:00)
             </div>
           </div>
 
