@@ -29,7 +29,6 @@ const App = () => {
   const [loading, setLoading] = useState(true);
   
   const [activeView, setActiveView] = useState('dashboard');
-  const [activeView, setActiveView] = useState('dashboard');
   
   // 1. Nuevos estados para detectar móviles
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
