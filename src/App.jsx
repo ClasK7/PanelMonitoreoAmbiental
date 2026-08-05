@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebase';
 import axios from 'axios';
 import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { Bar, Line } from 'react-chartjs-2';
@@ -11,10 +14,14 @@ import TarjetasIoT from './components/TarjetasIoT';
 import TablaDatos from './components/TablaDatos';
 import AlertasActivas from './components/AlertasActivas';
 import BusquedaPorArea from './components/BusquedaPorArea';
+import Landing from './pages/Landing';
+import Auth from './pages/Auth';
 
 const libreriasMapa = ['drawing'];
 
 const App = () => {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   // Cargador inteligente de Google Maps
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -36,14 +43,25 @@ const App = () => {
 
   // 2. Escuchador en tiempo real del tamaño de la pantalla
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
     const handleResize = () => {
       const mobile = window.innerWidth <= 768;
       setIsMobile(mobile);
       if (!mobile) setIsSidebarOpen(true); // Si se voltea a PC, el menú se abre por defecto
     };
     window.addEventListener('resize', handleResize);
+    return () => unsubscribe();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+  if (authLoading) return <div className="bg-github-dark d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-light"></div></div>;
+  // Componente que protege las rutas privadas
+  const ProtectedRoute = ({ children }) => {
+    if (!user) return <Navigate to="/auth" />;
+    return children;
+  };
 
   // 3. Función de Auto-Cierre al navegar
   const handleNavigation = (view) => {
@@ -140,6 +158,7 @@ const App = () => {
       
       {/* 1. NAVBAR SUPERIOR CON BOTÓN DE HAMBURGUESA */}
       <nav className="navbar navbar-dark shadow-sm z-3" style={{ backgroundColor: '#1e2b3c' }}>
+      <button onClick={() => auth.signOut()} className="btn btn-outline-light btn-sm ms-auto me-3">Cerrar sesión</button>
         <div className="container-fluid justify-content-start">
           <button 
             className="btn btn-link text-white me-3 text-decoration-none fs-4 px-2" 
@@ -344,6 +363,15 @@ const App = () => {
         </div>
       </div>
     </div>
+  );
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Landing />} />
+        <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <Auth />} />
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
