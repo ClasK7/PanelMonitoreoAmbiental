@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider } from '../firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+// 1. Añadimos sendEmailVerification a la importación
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, sendEmailVerification } from 'firebase/auth';
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,10 +18,17 @@ const Auth = () => {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
+        navigate('/dashboard'); // Si tiene éxito, entra al dashboard
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        // 2. Modificamos el registro para crear el usuario y enviar el correo
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await sendEmailVerification(userCredential.user);
+        
+        // 3. Notificamos al usuario
+        alert('¡Registro exitoso! Te hemos enviado un correo de bienvenida. Por favor, revisa tu bandeja de entrada o spam.');
+        
+        navigate('/dashboard'); 
       }
-      navigate('/dashboard'); // Si tiene éxito, entra al dashboard
     } catch (err) {
       setError('Error en la autenticación. Verifica tus credenciales.');
     }
@@ -33,6 +41,7 @@ const Auth = () => {
       await signInWithPopup(auth, googleProvider);
       navigate('/dashboard'); // Si tiene éxito, entra al dashboard
     } catch (err) {
+      console.error(err); // Para ver detalles en la consola si algo falla
       setError('Error al iniciar sesión con Google.');
     }
   };
