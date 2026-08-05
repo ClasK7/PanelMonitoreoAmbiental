@@ -19,9 +19,10 @@ import Auth from './pages/Auth';
 
 const libreriasMapa = ['drawing'];
 
-const App = () => {
-  const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
+// ==========================================
+// 1. COMPONENTE DEL DASHBOARD PROTEGIDO
+// ==========================================
+const DashboardLayout = () => {
   // Cargador inteligente de Google Maps
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -30,48 +31,35 @@ const App = () => {
     version: "3.64"
   });
 
-  //Estados
+  // Estados del Dashboard
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [loading, setLoading] = useState(true);
-  
   const [activeView, setActiveView] = useState('dashboard');
   
-  // 1. Nuevos estados para detectar móviles
+  // Estados para detectar móviles
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
-
-  // 2. Escuchador en tiempo real del tamaño de la pantalla
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setAuthLoading(false);
-    });
-    const handleResize = () => {
-      const mobile = window.innerWidth <= 768;
-      setIsMobile(mobile);
-      if (!mobile) setIsSidebarOpen(true); // Si se voltea a PC, el menú se abre por defecto
-    };
-    window.addEventListener('resize', handleResize);
-    return () => unsubscribe();
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-  if (authLoading) return <div className="bg-github-dark d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-light"></div></div>;
-  // Componente que protege las rutas privadas
-  const ProtectedRoute = ({ children }) => {
-    if (!user) return <Navigate to="/auth" />;
-    return children;
-  };
-
-  // 3. Función de Auto-Cierre al navegar
-  const handleNavigation = (view) => {
-    setActiveView(view);
-    if (isMobile) setIsSidebarOpen(false); // Cierra la pantalla completa en móviles
-  };//Para detectar otras pantallas
   const [selectedCountry, setSelectedCountry] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const [inputLimit, setInputLimit] = useState(100);
   const [fetchLimit, setFetchLimit] = useState(100); 
+
+  // Escuchador exclusivo para el tamaño de la pantalla
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth <= 768;
+      setIsMobile(mobile);
+      if (!mobile) setIsSidebarOpen(true);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleNavigation = (view) => {
+    setActiveView(view);
+    if (isMobile) setIsSidebarOpen(false);
+  };
 
   const cargarDatosRespaldo = () => {
     setLocations([
@@ -152,13 +140,11 @@ const App = () => {
       { label: 'Promedio Regional', data: [40, 42, 45, 45, 43, 40, 38], borderColor: '#2ecc71', backgroundColor: 'transparent', borderDash: [5, 5], tension: 0.4 }
     ]
   };
-//Estructura y diseno del Menu
+
   return (
     <div className="container-fluid p-0 d-flex flex-column" style={{ height: '100vh', overflow: 'hidden' }}>
-      
-      {/* 1. NAVBAR SUPERIOR CON BOTÓN DE HAMBURGUESA */}
       <nav className="navbar navbar-dark shadow-sm z-3" style={{ backgroundColor: '#1e2b3c' }}>
-      <button onClick={() => auth.signOut()} className="btn btn-outline-light btn-sm ms-auto me-3">Cerrar sesión</button>
+        <button onClick={() => auth.signOut()} className="btn btn-outline-light btn-sm ms-auto me-3">Cerrar sesión</button>
         <div className="container-fluid justify-content-start">
           <button 
             className="btn btn-link text-white me-3 text-decoration-none fs-4 px-2" 
@@ -171,85 +157,59 @@ const App = () => {
         </div>
       </nav>
 
-      {/* 2. CUERPO PRINCIPAL (FLEXBOX) */}
       <div className="d-flex flex-grow-1 overflow-hidden">
-        
-        {/* BARRA LATERAL ANIMADA (Estilo Full-Screen Móvil) */}
         <div 
           className="bg-dark flex-shrink-0 shadow" 
           style={{ 
-            position: isMobile ? 'fixed' : 'relative',
-            top: 0,
-            left: 0,
-            height: '100vh',
-            zIndex: 1050,
+            position: isMobile ? 'fixed' : 'relative', top: 0, left: 0, height: '100vh', zIndex: 1050,
             width: isMobile ? (isSidebarOpen ? '100%' : '0px') : (isSidebarOpen ? '250px' : '70px'), 
-            transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
-            overflowX: 'hidden',
-            backgroundColor: '#131314' /* Color oscuro idéntico a la app de Gemini */
+            transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)', overflowX: 'hidden', backgroundColor: '#131314' 
           }}
         >
-          {/* CABECERA MÓVIL CON BOTÓN DE CERRAR "X" */}
           {isMobile && (
             <div className="d-flex justify-content-between align-items-center p-3 mb-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
               <span className="text-white fw-bold fs-5">Menú de Navegación</span>
-              <button 
-                className="btn btn-link text-white fs-3 text-decoration-none p-0 lh-1" 
-                onClick={() => setIsSidebarOpen(false)}
-              >
-                ✕
-              </button>
+              <button className="btn btn-link text-white fs-3 text-decoration-none p-0 lh-1" onClick={() => setIsSidebarOpen(false)}>✕</button>
             </div>
           )}
 
           <ul className="nav flex-column gap-2 p-2 mt-2 text-nowrap">
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'dashboard' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('dashboard')} title="Dashboard">
-                <span className="fs-5">📊</span>
-                <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Dashboard</span>
+              <span className={`nav-link rounded ${activeView === 'dashboard' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('dashboard')}>
+                <span className="fs-5">📊</span><span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Dashboard</span>
               </span>
             </li>
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'grafico' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('grafico')} title="Gráfico en línea">
-                <span className="fs-5">📈</span>
-                <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Gráfico en línea</span>
+              <span className={`nav-link rounded ${activeView === 'grafico' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('grafico')}>
+                <span className="fs-5">📈</span><span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Gráfico en línea</span>
               </span>
             </li>
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'tarjetas' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('tarjetas')} title="Tarjetas IoT">
-                <span className="fs-5">💳</span>
-                <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Tarjetas IoT</span>
+              <span className={`nav-link rounded ${activeView === 'tarjetas' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('tarjetas')}>
+                <span className="fs-5">💳</span><span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Tarjetas IoT</span>
               </span>
             </li>
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'tablas' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('tablas')} title="Tablas de datos">
-                <span className="fs-5">📋</span>
-                <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Tablas de datos</span>
-              </span>
-            </li>
-            
-            {/* AQUÍ SE ELIMINARON LAS CLASES QUE CAUSABAN LA SEPARACIÓN (mt-4, pt-4, border-top) */}
-            <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'alertas' ? 'bg-danger text-white fw-bold' : 'text-danger opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('alertas')} title="Alertas Activas">
-                <span className="fs-5">⚠️</span>
-                <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Alertas Activas</span>
+              <span className={`nav-link rounded ${activeView === 'tablas' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('tablas')}>
+                <span className="fs-5">📋</span><span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Tablas de datos</span>
               </span>
             </li>
             <li className="nav-item">
-              <span className={`nav-link rounded ${activeView === 'bbox' ? 'bg-warning text-dark fw-bold' : 'text-warning opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('bbox')} title="Búsqueda por Área">
-                <span className="fs-5">🔲</span>
-                <span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Búsqueda por Área</span>
+              <span className={`nav-link rounded ${activeView === 'alertas' ? 'bg-danger text-white fw-bold' : 'text-danger opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('alertas')}>
+                <span className="fs-5">⚠️</span><span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Alertas Activas</span>
+              </span>
+            </li>
+            <li className="nav-item">
+              <span className={`nav-link rounded ${activeView === 'bbox' ? 'bg-warning text-dark fw-bold' : 'text-warning opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('bbox')}>
+                <span className="fs-5">🔲</span><span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Búsqueda por Área</span>
               </span>
             </li>
           </ul>
         </div>
 
-        {/* 3. ZONA DE CONTENIDO DINÁMICO */}
         <div className="flex-grow-1 overflow-auto">
           {activeView === 'dashboard' && (
             <div className="row g-0 h-100">
-              
-              {/* Sección Central del Dashboard (Modificado a col-md-8 para ajustar la nueva rejilla) */}
               <div className="col-md-8 p-3 p-md-4">
                 <div className="row mb-4 g-3">
                   <div className="col-12 col-md-3">
@@ -258,7 +218,6 @@ const App = () => {
                       <h3 className="text-primary fw-bold mb-0">{loading ? "..." : filteredAndSortedLocations.length}</h3>
                     </div>
                   </div>
-                  
                   <div className="col-12 col-md-4">
                     <div className="card shadow-sm p-3 border-0 bg-white h-100">
                       <label className="text-muted fw-bold mb-2 small">CANTIDAD A DESCARGAR:</label>
@@ -268,7 +227,6 @@ const App = () => {
                       </div>
                     </div>
                   </div>
-
                   <div className="col-12 col-md-5">
                     <div className="card shadow-sm p-3 border-0 bg-white h-100">
                       <label className="text-muted fw-bold mb-2 small">FILTRAR RED POR PAÍS:</label>
@@ -322,7 +280,6 @@ const App = () => {
                 </div>
               </div>
 
-              {/* Panel Lateral Derecho del Dashboard (Modificado a col-md-4) */}
               <div className="col-md-4 p-4 bg-white border-start shadow-sm scrollable-panel h-100 overflow-auto">
                 <h5 className="fw-bold mb-3 text-secondary">DETALLES DE LA UBICACIÓN</h5>
                 <hr />
@@ -349,21 +306,44 @@ const App = () => {
                   </div>
                 )}
               </div>
-
             </div>
           )}
 
-          {/* RENDERIZADO DEL RESTO DE VISTAS */}
           {activeView === 'grafico' && <GraficoEnLinea selectedLocation={selectedLocation} setActiveView={setActiveView} chartData={chartData} bigChartData={bigChartData} />}
           {activeView === 'tarjetas' && <TarjetasIoT locations={locations} getSensorStatus={getSensorStatus} />}
           {activeView === 'tablas' && <TablaDatos locations={locations} getSensorStatus={getSensorStatus} />}
           {activeView === 'alertas' && <AlertasActivas locations={locations} getSensorStatus={getSensorStatus} />}
           {activeView === 'bbox' && <BusquedaPorArea isLoaded={isLoaded} />}
-          
         </div>
       </div>
     </div>
   );
+};
+
+
+// ==========================================
+// 2. COMPONENTE PRINCIPAL APP (Orquestador)
+// ==========================================
+const App = () => {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Escuchador exclusivo de sesión activa de Firebase
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (authLoading) return <div className="bg-github-dark d-flex justify-content-center align-items-center vh-100"><div className="spinner-border text-light"></div></div>;
+
+  const ProtectedRoute = ({ children }) => {
+    if (!user) return <Navigate to="/auth" />;
+    return children;
+  };
+
   return (
     <BrowserRouter>
       <Routes>
