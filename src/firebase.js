@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 // Tus credenciales oficiales del proyecto Monitoreo-IoT-Avanzado
 const firebaseConfig = {
-  apiKey: import.meta.env.FIREBASE_AUT_API_KEY,
+  apiKey: "AIzaSyBLN_GIP-RBc2m_bpAiDBJcNoEnsM_Ukns",
   authDomain: "monitoreo-iot-avanzado.firebaseapp.com",
   databaseURL: "https://monitoreo-iot-avanzado-default-rtdb.firebaseio.com",
   projectId: "monitoreo-iot-avanzado",
