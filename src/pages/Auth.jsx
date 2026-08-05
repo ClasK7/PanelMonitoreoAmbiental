@@ -10,7 +10,7 @@ const Auth = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   
-  // Nuevo estado para controlar las reglas de la contraseña
+  // Estado para controlar las reglas de la contraseña
   const [passRules, setPassRules] = useState({
     length: false,
     lower: false,
@@ -45,7 +45,7 @@ const Auth = () => {
     setError('');
     setMessage('');
     
-    // Bloqueo de seguridad si intentan registrarse sin cumplir las reglas
+    // Bloqueo de seguridad si intentan registrase sin cumplir las reglas
     if (!isLogin && !isPasswordValid) {
       setError('Por favor, cumple con todos los requisitos de seguridad de la contraseña.');
       return;
@@ -98,8 +98,18 @@ const Auth = () => {
   };
 
   return (
-    <div className="bg-github-dark d-flex flex-column align-items-center justify-content-center px-3" style={{ minHeight: '100vh' }}>
-      <div className="text-center mb-4">
+    <div className="bg-github-dark d-flex flex-column align-items-center justify-content-center px-3 position-relative" style={{ minHeight: '100vh' }}>
+      
+      {/* NUEVO: Botón para regresar a la página de presentación (Landing) */}
+      <button 
+        onClick={() => navigate('/')}
+        className="btn btn-link text-github-muted text-decoration-none position-absolute top-0 start-0 m-3 m-md-4 d-flex align-items-center gap-2 hover-white"
+        style={{ fontSize: '14px', cursor: 'pointer' }}
+      >
+        <span>←</span> Volver al inicio
+      </button>
+
+      <div className="text-center mb-4 mt-5 mt-md-0">
         <h2 className="text-white fw-light tracking-tight">
           {isLogin ? 'Iniciar sesión en la plataforma' : 'Crea tu cuenta gratuita'}
         </h2>
@@ -143,7 +153,7 @@ const Auth = () => {
             />
           </div>
 
-          {/* LISTA DE VALIDACIÓN TIPO CISCO (Solo visible al registrarse) */}
+          {/* LISTA DE VALIDACIÓN TIPO CISCO */}
           {!isLogin && (
             <div className="p-2 mb-4 rounded" style={{ backgroundColor: '#0d1117', border: '1px solid #30363d' }}>
               <ul className="list-unstyled mb-0 small" style={{ fontSize: '11px' }}>
@@ -169,7 +179,6 @@ const Auth = () => {
             </div>
           )}
 
-          {/* El botón se deshabilita si están registrándose y no cumplen las reglas */}
           <button 
             type="submit" 
             className="btn btn-github-green w-100 py-2 mb-3"
@@ -210,7 +219,7 @@ const Auth = () => {
               setIsLogin(!isLogin);
               setError('');
               setMessage('');
-              setPassword(''); // Limpiamos la contraseña al cambiar de vista
+              setPassword(''); 
             }}
           >
             {isLogin ? 'Crea una cuenta' : 'Inicia sesión'}
