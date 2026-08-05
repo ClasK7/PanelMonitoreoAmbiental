@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, googleProvider } from '../firebase';
-// 1. Añadimos sendPasswordResetEmail a la importación de Firebase
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, sendEmailVerification, sendPasswordResetEmail } from 'firebase/auth';
 
 const Auth = () => {
@@ -9,18 +8,53 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [message, setMessage] = useState(''); // Nuevo estado para alertas de éxito
+  const [message, setMessage] = useState('');
+  
+  // Nuevo estado para controlar las reglas de la contraseña
+  const [passRules, setPassRules] = useState({
+    length: false,
+    lower: false,
+    upper: false,
+    number: false,
+    special: false,
+    notEmail: false
+  });
+
   const navigate = useNavigate();
 
-  // Función para manejar el acceso por Correo y Contraseña
+  // Motor de validación en tiempo real
+  useEffect(() => {
+    if (!isLogin) {
+      const emailPrefix = email.split('@')[0].toLowerCase();
+      setPassRules({
+        length: password.length >= 8,
+        lower: /[a-z]/.test(password),
+        upper: /[A-Z]/.test(password),
+        number: /[0-9]/.test(password),
+        special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+        notEmail: password.length > 0 && emailPrefix.length > 0 ? !password.toLowerCase().includes(emailPrefix) : false
+      });
+    }
+  }, [password, email, isLogin]);
+
+  // Verifica si todas las reglas se cumplen para habilitar el botón
+  const isPasswordValid = Object.values(passRules).every(Boolean);
+
   const handleAuth = async (e) => {
     e.preventDefault();
     setError('');
     setMessage('');
+    
+    // Bloqueo de seguridad si intentan registrarse sin cumplir las reglas
+    if (!isLogin && !isPasswordValid) {
+      setError('Por favor, cumple con todos los requisitos de seguridad de la contraseña.');
+      return;
+    }
+
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        navigate('/dashboard'); // Si tiene éxito, entra al dashboard
+        navigate('/dashboard'); 
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await sendEmailVerification(userCredential.user);
@@ -29,11 +63,10 @@ const Auth = () => {
         navigate('/dashboard'); 
       }
     } catch (err) {
-      setError('Error en la autenticación. Verifica tus credenciales.');
+      setError('Error en la autenticación. Verifica tus credenciales o intenta con otra cuenta.');
     }
   };
 
-  // Función para manejar el acceso rápido con Google
   const handleGoogleSignIn = async () => {
     setError('');
     setMessage('');
@@ -46,7 +79,6 @@ const Auth = () => {
     }
   };
 
-  // 2. Nueva función para manejar el restablecimiento de contraseña
   const handleResetPassword = async () => {
     setError('');
     setMessage('');
@@ -74,7 +106,6 @@ const Auth = () => {
       </div>
 
       <div className="bg-github-card p-4 shadow-sm w-100" style={{ maxWidth: '340px' }}>
-        {/* Sistema de alertas (Errores en rojo, Éxitos en verde) */}
         {error && <div className="alert alert-danger py-2 px-3 small">{error}</div>}
         {message && <div className="alert alert-success py-2 px-3 small">{message}</div>}
         
@@ -89,8 +120,8 @@ const Auth = () => {
               required 
             />
           </div>
-          <div className="mb-4">
-            {/* Cabecera del input de contraseña con el botón de recuperar */}
+          
+          <div className={isLogin ? "mb-4" : "mb-2"}>
             <div className="d-flex justify-content-between align-items-center mb-1">
               <label className="form-label text-white small fw-semibold m-0">Contraseña</label>
               {isLogin && (
@@ -108,22 +139,52 @@ const Auth = () => {
               className="input-github" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
-              required={!isLogin} /* Solo es estrictamente requerido al crear cuenta */
+              required 
             />
           </div>
-          <button type="submit" className="btn btn-github-green w-100 py-2 mb-3">
+
+          {/* LISTA DE VALIDACIÓN TIPO CISCO (Solo visible al registrarse) */}
+          {!isLogin && (
+            <div className="p-2 mb-4 rounded" style={{ backgroundColor: '#0d1117', border: '1px solid #30363d' }}>
+              <ul className="list-unstyled mb-0 small" style={{ fontSize: '11px' }}>
+                <li className={passRules.length ? 'text-success' : 'text-github-muted'}>
+                  {passRules.length ? '✓' : '○'} Al menos 8 caracteres
+                </li>
+                <li className={passRules.lower ? 'text-success' : 'text-github-muted'}>
+                  {passRules.lower ? '✓' : '○'} Una letra minúscula
+                </li>
+                <li className={passRules.upper ? 'text-success' : 'text-github-muted'}>
+                  {passRules.upper ? '✓' : '○'} Una letra mayúscula
+                </li>
+                <li className={passRules.number ? 'text-success' : 'text-github-muted'}>
+                  {passRules.number ? '✓' : '○'} Un número
+                </li>
+                <li className={passRules.special ? 'text-success' : 'text-github-muted'}>
+                  {passRules.special ? '✓' : '○'} Al menos un carácter especial (!@#$%...)
+                </li>
+                <li className={passRules.notEmail ? 'text-success' : 'text-github-muted'}>
+                  {passRules.notEmail ? '✓' : '○'} No debe coincidir con tu correo
+                </li>
+              </ul>
+            </div>
+          )}
+
+          {/* El botón se deshabilita si están registrándose y no cumplen las reglas */}
+          <button 
+            type="submit" 
+            className="btn btn-github-green w-100 py-2 mb-3"
+            disabled={!isLogin && !isPasswordValid}
+          >
             {isLogin ? 'Iniciar sesión' : 'Crear cuenta'}
           </button>
         </form>
 
-        {/* Separador estético para las opciones de Login */}
         <div className="d-flex align-items-center mb-3">
           <hr className="flex-grow-1 border-secondary m-0" />
           <span className="text-github-muted small px-2">o</span>
           <hr className="flex-grow-1 border-secondary m-0" />
         </div>
 
-        {/* Botón oficial de Google */}
         <button 
           type="button"
           onClick={handleGoogleSignIn} 
@@ -149,6 +210,7 @@ const Auth = () => {
               setIsLogin(!isLogin);
               setError('');
               setMessage('');
+              setPassword(''); // Limpiamos la contraseña al cambiar de vista
             }}
           >
             {isLogin ? 'Crea una cuenta' : 'Inicia sesión'}
