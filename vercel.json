@@ -3,6 +3,10 @@
     {
       "source": "/api-openaq/(.*)",
       "destination": "https://api.openaq.org/$1"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
