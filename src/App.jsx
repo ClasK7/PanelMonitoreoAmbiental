@@ -9,6 +9,7 @@ import 'chart.js/auto';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css'; 
 
+import ClimaHistorico from './components/ClimaHistorico';
 import GraficoEnLinea from './components/GraficosEnLinea';
 import TarjetasIoT from './components/TarjetasIoT';
 import TablaDatos from './components/TablaDatos';
@@ -204,6 +205,11 @@ const DashboardLayout = () => {
                 <span className="fs-5">🔲</span><span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Búsqueda por Área</span>
               </span>
             </li>
+            <li className="nav-item">
+              <span className={`nav-link rounded ${activeView === 'clima' ? 'bg-primary text-white fw-bold' : 'text-white opacity-75'}`} style={{ cursor: 'pointer' }} onClick={() => handleNavigation('clima')}>
+                <span className="fs-5">☁️</span><span className="ms-3 align-middle" style={{ opacity: isSidebarOpen ? 1 : 0, transition: 'opacity 0.2s' }}>Clima Histórico</span>
+              </span>
+            </li>
           </ul>
         </div>
 
@@ -314,6 +320,7 @@ const DashboardLayout = () => {
           {activeView === 'tablas' && <TablaDatos locations={locations} getSensorStatus={getSensorStatus} />}
           {activeView === 'alertas' && <AlertasActivas locations={locations} getSensorStatus={getSensorStatus} />}
           {activeView === 'bbox' && <BusquedaPorArea isLoaded={isLoaded} />}
+          {activeView === 'clima' && <ClimaHistorico />}
         </div>
       </div>
     </div>
