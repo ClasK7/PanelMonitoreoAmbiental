@@ -6,11 +6,10 @@ import 'chart.js/auto';
 const ClimaHistorico = () => {
   const [mediciones, setMediciones] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtroDispositivo, setFiltroDispositivo] = useState(''); // Estado para filtrar
+  const [filtroDispositivo, setFiltroDispositivo] = useState(''); 
 
   useEffect(() => {
     const fetchHistorial = async () => {
-      // Traemos más datos (400) porque ahora son 4 variables por cada tick de tiempo
       const { data, error } = await supabase
         .from('mediciones')
         .select(`*, dispositivos(nombre, ubicacion)`)
@@ -26,13 +25,12 @@ const ClimaHistorico = () => {
     const subscription = supabase
       .channel('clima_realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mediciones' }, async (payload) => {
-        // Obtenemos el nombre del dispositivo para la tabla
         const { data: dispData } = await supabase.from('dispositivos').select('nombre').eq('id', payload.new.id_dispositivo).single();
         const nuevaMedicion = { ...payload.new, dispositivos: dispData };
         
         setMediciones(prev => {
           const newData = [...prev, nuevaMedicion];
-          return newData.slice(-400); // Mantiene solo los últimos 400 registros para no saturar RAM
+          return newData.slice(-400); 
         });
       })
       .subscribe();
@@ -40,56 +38,111 @@ const ClimaHistorico = () => {
     return () => supabase.removeChannel(subscription);
   }, []);
 
-  // 1. Separar datos puros para los gráficos y tarjetas
-  const tempDatos = mediciones.filter(m => m.tipo_variable === 'temperatura');
-  const humDatos = mediciones.filter(m => m.tipo_variable === 'humedad');
-  const presDatos = mediciones.filter(m => m.tipo_variable === 'presion');
-  const aqiDatos = mediciones.filter(m => m.tipo_variable === 'calidad_aire');
+  // 1. Filtrar los datos base según el dropdown (Afecta Tarjetas y Gráficos)
+  const medicionesBase = filtroDispositivo 
+    ? mediciones.filter(m => m.id_dispositivo === filtroDispositivo) 
+    : mediciones;
 
-  // 2. Lógica para Agrupar los datos en forma de Tabla (Pivot Data)
+  // Extraer el último valor de cada variable para las tarjetas superiores
+  const tempDatos = medicionesBase.filter(m => m.tipo_variable === 'temperatura');
+  const humDatos = medicionesBase.filter(m => m.tipo_variable === 'humedad');
+  const presDatos = medicionesBase.filter(m => m.tipo_variable === 'presion');
+  const aqiDatos = medicionesBase.filter(m => m.tipo_variable === 'calidad_aire');
+
+  // 2. Lógica de Gráficos (Soporte para Múltiples Líneas)
+  const dispositivosUnicos = filtroDispositivo 
+    ? [filtroDispositivo] 
+    : [...new Set(mediciones.map(m => m.id_dispositivo))];
+
+  const labelsX = [...new Set(medicionesBase.map(m => m.timestamp))].sort();
+
+  // Paletas de colores estilo GitHub Dark para diferenciar dispositivos
+  const paletaTemp = ['#e34c26', '#f1e05a', '#e74c3c', '#fd8c73'];
+  const paletaHum = ['#58a6ff', '#79c0ff', '#1f6feb', '#a5d6ff'];
+
+  const construirDatasets = (tipoVariable, paletaColores) => {
+    return dispositivosUnicos.map((idDisp, index) => {
+      const nombre = mediciones.find(m => m.id_dispositivo === idDisp)?.dispositivos?.nombre || idDisp;
+      const datosDisp = mediciones.filter(m => m.id_dispositivo === idDisp && m.tipo_variable === tipoVariable);
+      
+      const dataAlineada = labelsX.map(tiempo => {
+        const registro = datosDisp.find(d => d.timestamp === tiempo);
+        return registro ? registro.valor : null; 
+      });
+
+      return {
+        label: nombre,
+        data: dataAlineada,
+        borderColor: paletaColores[index % paletaColores.length],
+        backgroundColor: paletaColores[index % paletaColores.length] + '33',
+        fill: filtroDispositivo ? true : false, // Solo rellenar si hay 1 solo nodo, para no saturar la vista
+        tension: 0.4,
+        spanGaps: true, // Crucial: Conecta los puntos si los dispositivos envían a destiempo
+        borderWidth: 2,
+        pointRadius: filtroDispositivo ? 3 : 0, // Ocultar los puntos si comparamos varios nodos
+      };
+    });
+  };
+
+  const chartOptions = { 
+    responsive: true, 
+    maintainAspectRatio: false, 
+    plugins: { 
+      legend: { 
+        display: !filtroDispositivo, // Mostrar leyenda de colores solo cuando hay varios nodos
+        labels: { color: '#8b949e', usePointStyle: true, boxWidth: 8 }
+      } 
+    }, 
+    scales: { 
+      y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#8b949e' } }, 
+      x: { grid: { display: false }, ticks: { display: false } } 
+    } 
+  };
+
+  const tempChart = { labels: labelsX.map(t => new Date(t).toLocaleTimeString()), datasets: construirDatasets('temperatura', paletaTemp) };
+  const humChart = { labels: labelsX.map(t => new Date(t).toLocaleTimeString()), datasets: construirDatasets('humedad', paletaHum) };
+
+  // 3. Lógica de la Tabla de Registros
   const datosTablaAgrupados = useMemo(() => {
     const grupos = {};
-    mediciones.forEach(m => {
-      // Usamos el timestamp como llave única, ya que se envían por lote (Batch) en el mismo instante
+    medicionesBase.forEach(m => {
       const llave = `${m.timestamp}_${m.id_dispositivo}`;
       if (!grupos[llave]) {
         grupos[llave] = {
-          rawTime: m.timestamp,
-          fechaHora: new Date(m.timestamp).toLocaleString(),
-          dispositivoId: m.id_dispositivo,
-          dispositivoNombre: m.dispositivos?.nombre || 'Desconocido',
+          rawTime: m.timestamp, fechaHora: new Date(m.timestamp).toLocaleString(),
+          dispositivoId: m.id_dispositivo, dispositivoNombre: m.dispositivos?.nombre || 'Desconocido',
           temperatura: '--', humedad: '--', presion: '--', calidad_aire: '--'
         };
       }
       grupos[llave][m.tipo_variable] = m.valor.toFixed(1);
     });
-
-    let filas = Object.values(grupos).sort((a, b) => new Date(b.rawTime) - new Date(a.rawTime));
-    
-    // Aplicar filtro si el usuario selecciona un dispositivo
-    if (filtroDispositivo) {
-      filas = filas.filter(f => f.dispositivoId === filtroDispositivo);
-    }
-    return filas;
-  }, [mediciones, filtroDispositivo]);
-
-  // Extraer lista única de dispositivos para el Select del filtro
-  const listaDispositivos = [...new Set(mediciones.map(m => m.id_dispositivo))].map(id => {
-    return mediciones.find(m => m.id_dispositivo === id)?.dispositivos?.nombre || id;
-  });
-
-  // Configuración Chart.js (Graficamos Temp y Humedad)
-  const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#8b949e' } }, x: { grid: { display: false }, ticks: { display: false } } } };
-  const tempChart = { labels: tempDatos.map(m => m.timestamp), datasets: [{ label: 'Temp °C', data: tempDatos.map(m => m.valor), borderColor: '#e34c26', backgroundColor: 'rgba(227, 76, 38, 0.2)', fill: true, tension: 0.4 }] };
-  const humChart = { labels: humDatos.map(m => m.timestamp), datasets: [{ label: 'Hum %', data: humDatos.map(m => m.valor), borderColor: '#58a6ff', backgroundColor: 'rgba(88, 166, 255, 0.2)', fill: true, tension: 0.4 }] };
+    return Object.values(grupos).sort((a, b) => new Date(b.rawTime) - new Date(a.rawTime));
+  }, [medicionesBase]);
 
   if (loading) return <div className="text-center p-5 text-white"><div className="spinner-border"></div></div>;
 
   return (
     <div className="w-100 p-3 p-md-4 text-white animation-fade-in">
-      <div className="mb-4">
-        <h2 className="fw-bold mb-0">Estación Meteorológica Central</h2>
-        <p className="text-github-muted mt-1">Telemetría consolidada en tiempo real (Supabase IoT)</p>
+      {/* Contenedor Superior: Título y Filtro Global */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <div>
+          <h2 className="fw-bold mb-0">Estación Meteorológica Central</h2>
+          <p className="text-github-muted mt-1 mb-0">Telemetría consolidada en tiempo real (Supabase IoT)</p>
+        </div>
+        
+        {/* El filtro ahora controla todo el dashboard */}
+        <select 
+          className="form-select form-select-sm w-auto bg-dark text-white border-secondary shadow-sm"
+          value={filtroDispositivo}
+          onChange={(e) => setFiltroDispositivo(e.target.value)}
+        >
+          <option value="">Todos los dispositivos (Comparativa)</option>
+          {[...new Set(mediciones.map(m => m.id_dispositivo))].map(id => (
+            <option key={id} value={id}>
+              {mediciones.find(m => m.id_dispositivo === id)?.dispositivos?.nombre || id}
+            </option>
+          ))}
+        </select>
       </div>
 
       {/* 4 TARJETAS SUPERIORES */}
@@ -111,43 +164,25 @@ const ClimaHistorico = () => {
         ))}
       </div>
 
-      {/* 2 GRÁFICOS */}
+      {/* 2 GRÁFICOS MULTI-LÍNEA */}
       <div className="row g-3 mb-4">
         <div className="col-md-6">
           <div className="bg-github-card p-3 rounded shadow-sm border border-secondary">
             <h6 className="text-white fw-bold mb-3">Histórico de Temperatura</h6>
-            <div style={{ height: '200px' }}>{tempDatos.length > 0 && <Line data={tempChart} options={chartOptions} />}</div>
+            <div style={{ height: '220px' }}>{tempDatos.length > 0 && <Line data={tempChart} options={chartOptions} />}</div>
           </div>
         </div>
         <div className="col-md-6">
           <div className="bg-github-card p-3 rounded shadow-sm border border-secondary">
             <h6 className="text-white fw-bold mb-3">Histórico de Humedad</h6>
-            <div style={{ height: '200px' }}>{humDatos.length > 0 && <Line data={humChart} options={chartOptions} />}</div>
+            <div style={{ height: '220px' }}>{humDatos.length > 0 && <Line data={humChart} options={chartOptions} />}</div>
           </div>
         </div>
       </div>
 
-      {/* TABLA DE REGISTROS LOGS (Data Logger) */}
+      {/* TABLA DE REGISTROS LOGS */}
       <div className="bg-github-card p-4 rounded shadow-sm border border-secondary">
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <h5 className="fw-bold text-white mb-0">Registro Histórico (Data Logger)</h5>
-          
-          {/* Filtro por Dispositivo */}
-          <select 
-            className="form-select form-select-sm w-auto bg-dark text-white border-secondary"
-            value={filtroDispositivo}
-            onChange={(e) => setFiltroDispositivo(e.target.value)}
-          >
-            <option value="">Todos los dispositivos</option>
-            {/* Solo extrae IDs únicos presentes en los datos */}
-            {[...new Set(mediciones.map(m => m.id_dispositivo))].map(id => (
-              <option key={id} value={id}>
-                {mediciones.find(m => m.id_dispositivo === id)?.dispositivos?.nombre || id}
-              </option>
-            ))}
-          </select>
-        </div>
-
+        <h5 className="fw-bold text-white mb-3">Registro Histórico (Data Logger)</h5>
         <div className="table-responsive" style={{ maxHeight: '350px', overflowY: 'auto' }}>
           <table className="table table-dark table-hover align-middle text-center">
             <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
